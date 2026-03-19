@@ -19,9 +19,6 @@ export default function Home() {
           <li>
             聊天接口：<code>/api/chat</code>
           </li>
-          <li>
-            PDF 代理接口：<code>/api/pdf</code>
-          </li>
         </ul>
       </div>
 

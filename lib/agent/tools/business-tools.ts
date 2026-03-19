@@ -125,27 +125,5 @@ export function createBusinessTools(token?: string) {
     },
   );
 
-  const analyzePdf = tool(
-    async ({ fileUrl, userQuestion }) => {
-      const path = process.env.JAVA_PDF_ANALYZE_PATH ?? '/ai/pdf/analyze';
-      const result = await callJavaApi(token, path, 'POST', {
-        fileUrl,
-        userQuestion,
-      });
-      return JSON.stringify(result);
-    },
-    {
-      name: 'analyze_pdf_report',
-      description: '调用现有 Java 后端能力分析已上传的 PDF 报告并返回摘要。',
-      schema: z.object({
-        fileUrl: z.string().url().describe('待分析的 PDF 文件地址'),
-        userQuestion: z
-          .string()
-          .describe('可选聚焦问题，例如：请总结诊断结论')
-          .default('请总结这份报告中的主要诊断结论。'),
-      }),
-    },
-  );
-
-  return [getPatientCaseById, analyzePdf];
+  return [getPatientCaseById];
 }

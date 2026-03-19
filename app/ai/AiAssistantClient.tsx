@@ -192,9 +192,7 @@ export default function AiAssistantClient({ token }: Props) {
             <h1 className="text-base font-semibold text-slate-800">
               眼科智能助手
             </h1>
-            <p className="text-xs text-slate-500">
-              支持问答、病例查询与PDF分析
-            </p>
+            <p className="text-xs text-slate-500">支持问答与病例查询</p>
           </div>
           <button
             type="button"

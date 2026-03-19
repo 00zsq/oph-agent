@@ -4,7 +4,6 @@
 
 - SSR AI 助手页面：`/ai`
 - 智能体对话接口：`/api/chat`
-- PDF 上传代理接口：`/api/pdf`
 - 通过 Function Calling 对接现有 Java 业务接口
 - 内部 RAG 检索 + 千问原生联网搜索
 
@@ -54,7 +53,6 @@ app/
     AiAssistantClient.tsx    # 聊天 UI 与前端调用逻辑
   api/
     chat/route.ts            # 对话 API，调用 LangGraph 智能体
-    pdf/route.ts             # PDF 上传代理到 Java 后端
   layout.tsx                 # 全局布局
   page.tsx                   # 首页说明
 
@@ -69,7 +67,7 @@ lib/
       search-service.ts              # RAG 轻量检索服务（可后续替换向量库）
       types.ts                       # RAG 类型定义
     tools/
-      business-tools.ts      # Java 业务工具（病例查询、PDF 分析）
+      business-tools.ts      # Java 业务工具（病例查询）
       rag-tools.ts           # RAG 工具（联网搜索由模型原生能力提供）
 ```
 
@@ -84,10 +82,6 @@ lib/
       -> rag-tools.ts 做知识检索
     -> 模型原生联网搜索（QWEN_ENABLE_SEARCH）
   -> 返回答案到前端消息流
-
-前端上传 PDF
-  -> POST /api/pdf
-  -> Java 文件上传接口
 ```
 
 ## 5. API 契约
@@ -117,10 +111,6 @@ lib/
 }
 ```
 
-### 5.2 POST `/api/pdf`
-
-该接口为透传代理：前端提交 `multipart/form-data`，服务端转发到 Java 的 PDF 上传接口。
-
 ## 6. 当前实现说明
 
 - RAG 已按“数据/配置/检索逻辑”解耦：
@@ -147,7 +137,6 @@ npm run validate:rag
 - 输出每条问答的“命中/引用完整”结果。
 - 最终输出“命中率”和“引用完整率”。
 - 默认请求地址为 `http://localhost:3000/api/chat`，可通过环境变量 `CHAT_API_URL` 覆盖。
-
 
 问答主链路可用：前端提问到后端智能体返回答案，见 route.ts 和 index.ts
 RAG 已解耦并可检索：数据、配置、检索逻辑分离，见 knowledge-base.v1.json、config.ts、search-service.ts

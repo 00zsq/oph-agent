@@ -1,12 +1,12 @@
-# Oph Agent 实施计划（LangGraph 节点优先）
+# Oph Agent 实施计划（当前版本）
 
 ## 0. 目标范围
 
 本阶段聚焦 3 条能力链路：
 
 1. 普通问答：LLM + Web 检索 + RAG 知识库检索，返回文本答案。
-2. Function 调用：在 AI 页面触发工具调用 Java 后端接口并返回结构化信息（如病例列表）。
-3. 文件分析：上传 PDF/图片后，AI 给出分析建议。
+2. Function 调用：在 AI 页面触发工具调用 Java 后端接口并返回结构化信息（如病例列表/详情）。
+3. 质量保障：批量评测问答命中率与引用完整率，持续改进 RAG。
 
 ---
 
@@ -16,8 +16,8 @@
 
 1. 模型与密钥
 
-- OPENAI_API_KEY（必需）
-- 可选模型名（默认 gpt-4o-mini）
+- OPENAI_API_KEY（或 DASHSCOPE_API_KEY）
+- 可选模型名（默认 qwen3.5-plus）
 
 2. Java 后端接口文档（至少要有以下内容）
 
@@ -27,23 +27,15 @@
 
 3. 业务接口清单（第一批建议）
 
-- 查询病人病例列表（你的例子）
+- 查询病人病例列表
 - 查询病人详情/病例详情
 - （可选）按条件检索病例（时间、科室、诊断标签）
-- PDF 分析接口（若 Java 侧已有）
-- 图片分析接口（若 Java 侧已有；没有则用 LLM Vision 直接分析）
 
 4. RAG 数据源
 
 - 知识文档原始来源（指南、制度、FAQ、病例模板）
 - 文档更新频率和负责人
-- 权限要求（哪些文档可被 AI 检索）
-
-5. 文件存储与访问策略
-
-- 上传后文件 URL 是否可回源访问
-- 临时 URL 过期策略
-- 文件大小限制、格式白名单（pdf/jpg/png/jpeg/webp）
+- 权限要求（医生端默认全可见）
 
 ## 1.2 强烈建议提供（影响效果与上线质量）
 
@@ -55,7 +47,7 @@
 
 2. 评测样本集
 
-- 至少 30 条问答（普通问答、工具调用、文件分析各 10 条）
+- 至少 30 条问答（普通问答、工具调用、时效性问答）
 - 每条包含“期望答案要点”
 
 3. 观测与审计要求
@@ -67,57 +59,54 @@
 
 ## 2. 当前代码基线（已具备）
 
-1. 已有 Agent 入口与工具挂载
+1. Agent 入口与规则文档加载
 
 - lib/agent/index.ts
-- 已接入 createReactAgent
+- lib/agent/docs/medical-response-policy.v1.md
 
-2. 已有工具雏形
+2. RAG 解耦模块
 
-- lib/agent/tools/business-tools.ts
+- lib/agent/docs/knowledge-base.v1.json
+- lib/agent/rag/config.ts
+- lib/agent/rag/search-service.ts
 - lib/agent/tools/rag-tools.ts
 
-3. 已有 API 路由
+3. 业务工具与 API
 
+- lib/agent/tools/business-tools.ts（病例查询）
 - app/api/chat/route.ts
-- app/api/pdf/route.ts
 
-4. 已有环境变量模板
+4. 评测脚本
 
-- .env.example
+- scripts/validate-rag.mjs
+- lib/agent/docs/rag-eval-qa.v1.json
 
-结论：骨架已经在，只需要把“节点编排 + 工具集 + 文件链路 + RAG 实体化”做实。
+结论：骨架已可用，下一步重点是“检索质量 + 工具覆盖 + 评测闭环”。
 
 ---
 
-## 3. 架构图（目标态）
+## 3. 架构图（当前目标态）
 
 ```mermaid
 flowchart TD
     U[Vue 页面 iframe] --> A[/ai 聊天页]
     A --> C[/api/chat]
-    A --> P[/api/pdf 上传]
 
     C --> G[LangGraph Agent Graph]
 
     G --> N1[意图识别节点 Intent Router]
     N1 -->|普通问答| N2[RAG 检索节点]
-    N1 -->|需要最新信息| N3[Web 检索节点]
+    N1 -->|需要最新信息| N3[Web 检索能力]
     N1 -->|业务数据查询| N4[Function Tool 节点]
-    N1 -->|文件分析| N5[文件分析节点]
 
-    N2 --> N6[答案综合节点]
-    N3 --> N6
-    N4 --> N6
-    N5 --> N6
+    N2 --> N5[答案综合节点]
+    N3 --> N5
+    N4 --> N5
 
-    N6 --> N7[安全审校节点]
-    N7 --> C
+    N5 --> N6[安全审校节点]
+    N6 --> C
 
     N4 --> J[Java Backend APIs]
-    P --> S[(对象存储/文件服务)]
-    N5 --> S
-    N5 --> J
 ```
 
 ---
@@ -128,7 +117,7 @@ flowchart TD
 
 1. Next.js 16 + App Router
 2. LangChain 0.3 生态 + LangGraph 0.2
-3. OpenAI Chat 模型（ChatOpenAI）
+3. Qwen/OpenAI 兼容 Chat 模型
 4. Zod（工具参数校验）
 
 ## 4.2 建议补充
@@ -138,10 +127,10 @@ flowchart TD
 - 方案 A（快）：pgvector + Postgres
 - 方案 B（托管）：Pinecone/Milvus
 
-2. 文档解析
+2. 检索增强
 
-- PDF：pdf-parse 或 Java 侧解析后回传结构化文本
-- 图片：优先走多模态模型（若合规），或 Java OCR 服务
+- 混合检索（关键词 + 向量）
+- 重排（re-rank）
 
 3. 可观测
 
@@ -160,83 +149,72 @@ flowchart TD
 
 1. intent_router
 
-- 输入：user question + 会话上下文 + 文件上下文
-- 输出：route = chat | function | file
+- 输入：user question + 会话上下文
+- 输出：route = chat | function
 
 2. retrieve_rag
 
 - 仅在 route=chat/function 辅助时执行
-- 输出：topK 文档片段 + 引用源
+- 输出：topK 文档片段 + citation
 
 3. retrieve_web
 
 - 仅在“时效性问题”执行
-- 输出：网页摘要 + 来源链接
+- 输出：网页摘要 + 来源提示
 
 4. call_business_tools
 
 - route=function 时执行
 - 调用 Java API 工具（病例列表、详情等）
 
-5. analyze_file
+5. synthesize_answer
 
-- route=file 时执行
-- 输入 fileId/fileUrl + userQuestion
-- 分支：pdf_analyze 或 image_analyze
+- 汇总 RAG/Web/Tool 结果，生成可读答案
 
-6. synthesize_answer
-
-- 汇总 RAG/Web/Tool/File 结果，生成可读答案
-
-7. safety_guard
+6. safety_guard
 
 - 统一加医疗安全声明、敏感内容检查
 
 ## 5.2 路由策略（可先规则后模型）
 
 1. 若命中关键词（病例、患者、列表、查询、病历号）=> function
-2. 若包含附件且有 fileUrl/fileId => file
-3. 其余 => chat
-4. chat 下再判断是否需要 web（如“最新指南/最近/今年”）
+2. 其余 => chat
+3. chat 下再判断是否需要 web（如“最新指南/最近/今年”）
 
 ---
 
 ## 6. 分阶段实现步骤
 
-## 阶段 A：先打通 Function（最高业务价值）
+## 阶段 A：Function 完善
 
-1. 新增/扩展工具
+1. 扩展工具
 
-- 在 business-tools.ts 新增 get_patient_case_list 等工具
+- 在 business-tools.ts 增加 get_patient_case_list 等工具
 - 每个工具单独 zod schema + 明确 description
 
 2. 统一 Java 返回适配
 
 - 规范成功/失败结构
-- 对分页数据做标准化（items,total,page,size）
+- 对分页数据做标准化（items/total/page/size）
 
-3. 在 Agent Prompt 中强化工具优先策略
-
-- 涉及“查询/列表/详情”必须先调工具，禁止编造
-
-4. 验收
+3. 验收
 
 - 输入“帮我查询病人病例列表”可稳定触发工具
-- 返回可读摘要 + 原始关键字段（如人数、最近记录）
+- 返回可读摘要 + 原始关键字段
 
-## 阶段 B：RAG 实体化（替换内存 demo）
+## 阶段 B：RAG 提升
 
-1. 建立 ingestion 脚本
+1. ingestion 脚本
 
 - 文档切分、向量化、入库
 
-2. 替换 rag-tools.ts
+2. 替换轻量检索
 
-- 从向量库检索，不再使用硬编码 KNOWLEDGE_BASE
+- 从向量库检索，不再只依赖关键词
 
 3. 引用与可解释
 
-- 答案附“参考来源标题 + 片段”
+- 答案强制附带 citation（[文档标题@版本号#章节]）
 
 4. 验收
 
@@ -244,9 +222,9 @@ flowchart TD
 
 ## 阶段 C：Web 检索增强
 
-1. 启用 Tavily（或等价搜索）
+1. 启用模型原生联网能力
 
-- 配置 TAVILY_API_KEY
+- QWEN_ENABLE_SEARCH / QWEN_FORCED_SEARCH
 
 2. 时效性判定
 
@@ -258,38 +236,14 @@ flowchart TD
 
 4. 验收
 
-- “最新指南/近期研究”问题有来源链接且不胡编
+- “最新指南/近期研究”问题有来源提示且不胡编
 
-## 阶段 D：文件分析（PDF + 图片）
-
-1. 上传链路
-
-- 前端调用 /api/pdf 上传，拿到 fileUrl/fileId
-
-2. 分析链路
-
-- PDF：优先 Java analyze 接口
-- 图片：
-  - 若 Java 有图像分析接口，走 Java
-  - 否则新增 image_analyze_tool，调用多模态模型
-
-3. 输出模板
-
-- 核心发现
-- 可能风险
-- 建议下一步检查
-- 医疗免责声明
-
-4. 验收
-
-- 上传 PDF/图片后可在 1 次会话里连续追问
-
-## 阶段 E：稳定性与上线
+## 阶段 D：稳定性与上线
 
 1. 错误处理
 
 - 明确区分配置错误、网络错误、后端业务错误
-- 前端展示友好报错（例如缺少 OPENAI_API_KEY）
+- 前端展示友好报错（例如缺少模型密钥）
 
 2. 观测与审计
 
@@ -314,23 +268,23 @@ flowchart TD
 
 2. Day 3-4
 
-- 接入真实向量库并替换 demo RAG
+- 接入真实向量库并替换轻量 RAG 检索
 
 3. Day 5
 
-- 打通 PDF 分析端到端 + 错误提示优化
+- 扩充评测集并跑批量评测，优化命中率与引用完整率
 
 里程碑完成定义：
 
-- 三类请求（普通问答、函数调用、文件分析）各至少 10 条用例通过。
+- 三类请求（普通问答、函数调用、时效性问答）各至少 10 条用例通过。
 
 ---
 
 ## 8. 你下一步先给我什么（按优先级）
 
-1. Java “病例列表”接口文档（路径、参数、响应示例）
-2. Java “PDF 分析/图片分析”接口文档（若无图片接口请明确）
-3. 计划使用的向量库方案（pgvector 或 Pinecone/Milvus）
+1. Java “病例列表/详情”接口文档（路径、参数、响应示例）
+2. 计划使用的向量库方案（pgvector 或 Pinecone/Milvus）
+3. 扩展知识库文档（至少 30 篇）
 4. 一份可脱敏测试数据（至少 5 个病人示例）
 
-拿到以上 4 项后，可以立即开始阶段 A 和阶段 D 的代码实现。
+拿到以上 4 项后，可以立即开始阶段 A 与阶段 B 的代码实现。
