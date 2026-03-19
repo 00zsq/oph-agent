@@ -1,0 +1,122 @@
+[
+  {
+    "id": "kb-2025-dr-tcm-west-guideline",
+    "title": "糖尿病视网膜病变中西医结合防治指南",
+    "source": "中华全科医学",
+    "publisher": "中华全科医学",
+    "year": 2025,
+    "version": "2025v1",
+    "url": "http://zhqkyx.net/article/doi/10.16766/j.cnki.issn.1674-4152.003946",
+    "sectionHint": "诊断与分级",
+    "summary": "涵盖 DR 的中西医结合诊断、辨证治疗及康复，并附有 DR 和黄斑水肿国际临床分级表。",
+    "keywords": ["糖尿病视网膜病变", "DR", "黄斑水肿", "中西医结合", "分级"]
+  },
+  {
+    "id": "kb-2025-ntg-consensus-cn",
+    "title": "中国正常眼压性青光眼诊疗专家共识（2025年）",
+    "source": "中华医学会眼科学分会青光眼学组",
+    "publisher": "中华医学会眼科学分会青光眼学组",
+    "year": 2025,
+    "version": "2025v1",
+    "url": "https://m.xiameneye.org.cn/html/news/yykx/2025_1008_92387.html",
+    "sectionHint": "鉴别诊断与分类诊疗",
+    "summary": "更新了 NTG 的发病机制、鉴别诊断要点及分类诊疗思路。",
+    "keywords": ["正常眼压性青光眼", "NTG", "鉴别诊断", "视神经病变"]
+  },
+  {
+    "id": "kb-2025-namd-consensus-pubmed",
+    "title": "国际新生血管性年龄相关性黄斑变性（nAMD）共识与指南",
+    "source": "亚太玻璃体视网膜学会（APVRS）等",
+    "publisher": "APVRS",
+    "year": 2025,
+    "version": "2025v1",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/40886774/",
+    "sectionHint": "诊断与治疗争议",
+    "summary": "围绕 nAMD 的病因、诊断、抗 VEGF 治疗策略与基因治疗形成国际共识。",
+    "keywords": ["nAMD", "黄斑变性", "抗VEGF", "基因治疗"]
+  },
+  {
+    "id": "kb-2025-arn-consensus",
+    "title": "急性视网膜坏死综合征（ARN）诊断和治疗专家共识",
+    "source": "中华眼底病杂志",
+    "publisher": "中华眼底病杂志",
+    "year": 2025,
+    "version": "2025v1",
+    "url": "https://www.hxyx.com/article/10.3760/cma.j.cn511434-20250630-00292",
+    "sectionHint": "临床表现与治疗路径",
+    "summary": "系统阐述 ARN 的临床表现、鉴别诊断、抗病毒治疗与手术治疗规范路径。",
+    "keywords": ["ARN", "急性视网膜坏死", "抗病毒", "鉴别诊断"]
+  },
+  {
+    "id": "kb-2025-imi-digest",
+    "title": "IMI 2025 Digest——国际近视研究院2025年度摘要",
+    "source": "国际近视研究院（IMI）",
+    "publisher": "IMI",
+    "year": 2025,
+    "version": "2025v1",
+    "url": "https://myopiainstitute.org/imi-whitepaper/imi-2025-digest/",
+    "sectionHint": "近视管理与分级",
+    "summary": "提供预近视干预与近视牵引性黄斑病变新 OCT 分级等最新循证建议。",
+    "keywords": ["近视", "预近视", "OCT", "分级", "管理"]
+  },
+  {
+    "id": "kb-2025-dr-nvg-flow-consensus",
+    "title": "糖尿病视网膜病变相关新生血管性青光眼全流程管理专家共识",
+    "source": "中华医学会相关学组",
+    "publisher": "中华医学会相关学组",
+    "year": 2025,
+    "version": "2025v1",
+    "url": "https://d.wanfangdata.com.cn/periodical/ykxjz202512001",
+    "sectionHint": "全流程管理",
+    "summary": "提出 DR-NVG 从早筛、分期到联合治疗和长期随访的全流程管理策略。",
+    "keywords": ["DR-NVG", "新生血管性青光眼", "筛查", "分期", "随访"]
+  },
+  {
+    "id": "kb-2025-pacg-consensus",
+    "title": "中国原发性闭角型青光眼（PACG）诊疗专家共识（2025年）",
+    "source": "中华医学会眼科学分会青光眼学组",
+    "publisher": "中华医学会眼科学分会青光眼学组",
+    "year": 2025,
+    "version": "2025v1",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/40921654/",
+    "sectionHint": "分类与治疗原则",
+    "summary": "更新了 PACG 的分类体系、诊断方法和激光/手术治疗时机。",
+    "keywords": ["PACG", "闭角型青光眼", "激光", "手术时机"]
+  },
+  {
+    "id": "kb-2025-namd-consensus-full",
+    "title": "国际新生血管性年龄相关性黄斑变性（nAMD）共识与指南（完整版）",
+    "source": "Asia-Pacific Journal of Ophthalmology",
+    "publisher": "Asia-Pacific Journal of Ophthalmology",
+    "year": 2025,
+    "version": "2025v1-full",
+    "url": "https://www.sciencedirect.com/science/article/pii/S2162098925001094",
+    "sectionHint": "31项争议问题共识",
+    "summary": "给出 nAMD 管理中 31 个争议问题的投票共识，覆盖遗传学、影像学和治疗策略。",
+    "keywords": ["nAMD", "共识", "影像学", "遗传学", "治疗策略"]
+  },
+  {
+    "id": "kb-2025-mmn-consensus",
+    "title": "我国病理性近视新生血管性黄斑病变（MMN）诊疗规范专家共识",
+    "source": "中华眼底病杂志",
+    "publisher": "中华眼底病杂志",
+    "year": 2025,
+    "version": "2025v1",
+    "url": "https://www.hxyx.com/article/10.3760/cma.j.cn511434-20250526-00232",
+    "sectionHint": "ATN 分期与治疗指征",
+    "summary": "推荐 ATN 分期系统，并规范了抗 VEGF 启动、再治疗指征及长期随访策略。",
+    "keywords": ["MMN", "ATN", "抗VEGF", "病理性近视", "随访"]
+  },
+  {
+    "id": "kb-2025-dr-tcm-west-guideline-full",
+    "title": "糖尿病视网膜病变中西医结合防治指南（全文）",
+    "source": "中华全科医学",
+    "publisher": "中华全科医学",
+    "year": 2025,
+    "version": "2025v1-full",
+    "url": "http://zhqkyx.net/article/doi/10.16766/j.cnki.issn.1674-4152.003946",
+    "sectionHint": "中药专方与证据等级",
+    "summary": "提供 DR 的详细中西医结合诊疗方案，包括专方建议及证据等级说明。",
+    "keywords": ["糖网方", "达明饮", "证据等级", "中西医结合"]
+  }
+]
