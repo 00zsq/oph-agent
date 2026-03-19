@@ -6,7 +6,7 @@
 - 智能体对话接口：`/api/chat`
 - PDF 上传代理接口：`/api/pdf`
 - 通过 Function Calling 对接现有 Java 业务接口
-- 内部 RAG 检索 + 可选联网搜索
+- 内部 RAG 检索 + 千问原生联网搜索
 
 ## 1. 安装与环境准备
 
@@ -20,9 +20,9 @@ cp .env.example .env.local
 - `OPENAI_API_KEY`（或 `DASHSCOPE_API_KEY`）
 - `OPENAI_BASE_URL`（百炼兼容地址示例已提供）
 - `OPENAI_MODEL`
+- `QWEN_ENABLE_SEARCH`（是否启用联网搜索）
 - `JAVA_API_BASE_URL`
 - Java 侧具体接口路径
-- 可选：`TAVILY_API_KEY`（用于联网搜索）
 
 ## 2. 启动项目
 
@@ -62,7 +62,7 @@ lib/
     index.ts                 # 智能体入口（模型、Prompt、工具挂载）
     tools/
       business-tools.ts      # Java 业务工具（病例查询、PDF 分析）
-      rag-tools.ts           # RAG 工具与可选联网搜索工具
+      rag-tools.ts           # RAG 工具（联网搜索由模型原生能力提供）
 ```
 
 ### 4.2 运行链路
@@ -73,7 +73,8 @@ lib/
   -> runAgent(lib/agent/index.ts)
   -> LangGraph 工具调用
      -> business-tools.ts 调 Java 接口
-     -> rag-tools.ts 做知识检索/联网搜索
+      -> rag-tools.ts 做知识检索
+    -> 模型原生联网搜索（QWEN_ENABLE_SEARCH）
   -> 返回答案到前端消息流
 
 前端上传 PDF

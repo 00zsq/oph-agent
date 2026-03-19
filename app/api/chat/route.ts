@@ -26,6 +26,7 @@ export async function POST(request: NextRequest) {
       question?: string;
       token?: string;
       threadId?: string;
+      enableWebSearch?: boolean;
     };
 
     const question = body.question?.trim();
@@ -40,6 +41,7 @@ export async function POST(request: NextRequest) {
       token,
       threadId,
       question,
+      enableWebSearch: body.enableWebSearch,
     });
 
     return NextResponse.json({

@@ -1,5 +1,4 @@
-import { tool, type StructuredToolInterface } from '@langchain/core/tools';
-import { TavilySearchResults } from '@langchain/community/tools/tavily_search';
+import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
 
 type KnowledgeDoc = {
@@ -74,38 +73,5 @@ export function createRagTools() {
     },
   );
 
-  const tools: StructuredToolInterface[] = [searchKnowledgeBase];
-
-  if (process.env.TAVILY_API_KEY) {
-    tools.push(
-      new TavilySearchResults({
-        maxResults: 3,
-        apiKey: process.env.TAVILY_API_KEY,
-        includeAnswer: true,
-        includeRawContent: false,
-      }),
-    );
-  } else {
-    const webSearchFallback = tool(
-      async ({ query }) => {
-        return JSON.stringify({
-          ok: false,
-          reason:
-            '未配置 TAVILY_API_KEY，暂时无法使用联网搜索。请先配置后再试。',
-          query,
-        });
-      },
-      {
-        name: 'search_web_live',
-        description: '联网检索最新信息；若未配置搜索服务，则返回配置提示。',
-        schema: z.object({
-          query: z.string().describe('联网搜索关键词'),
-        }),
-      },
-    );
-
-    tools.push(webSearchFallback);
-  }
-
-  return tools;
+  return [searchKnowledgeBase];
 }
