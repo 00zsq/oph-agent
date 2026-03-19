@@ -1,36 +1,78 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Oph Agent Service (Next.js + LangGraph)
 
-## Getting Started
+This service provides:
 
-First, run the development server:
+- SSR AI assistant page at `/ai`
+- Agent API endpoint at `/api/chat`
+- PDF upload proxy endpoint at `/api/pdf`
+- Function-call bridge to existing Java backend APIs
+- Internal RAG lookup + optional live web search
+
+## 1) Install and prepare env
+
+```bash
+npm install
+cp .env.example .env.local
+```
+
+Fill `.env.local` values:
+
+- `OPENAI_API_KEY`
+- `JAVA_API_BASE_URL`
+- Java endpoint paths used in your current system
+- Optional `TAVILY_API_KEY` for web search
+
+## 2) Run
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000/ai`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 3) Embed into existing Vue app via iframe
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```html
+<iframe
+  src="http://localhost:3000/ai?token=YOUR_TOKEN"
+  style="width: 100%; height: 100%; border: 0;"
+  allow="clipboard-read; clipboard-write"
+></iframe>
+```
 
-## Learn More
+## API contracts
 
-To learn more about Next.js, take a look at the following resources:
+### POST `/api/chat`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Request body:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```json
+{
+  "question": "Query patient 1024 case and summarize key findings",
+  "threadId": "optional-session-id"
+}
+```
 
-## Deploy on Vercel
+Headers:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `authentication: <token>` (compatible with current Java interface style)
+- or `Authorization: Bearer <token>`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Response:
+
+```json
+{
+  "threadId": "session-id",
+  "data": "assistant answer"
+}
+```
+
+### POST `/api/pdf`
+
+Pass-through upload endpoint for Java PDF upload API. Send multipart `form-data` from frontend.
+
+## Notes
+
+- Current RAG is a simple in-memory demo retriever in `lib/agent/tools/rag-tools.ts`.
+- Replace it with your vector DB retriever (e.g. PGVector, Milvus, Pinecone) next.
+- Current function-call tools are in `lib/agent/tools/business-tools.ts` and can be expanded safely without changing Java backend code.

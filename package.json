@@ -9,9 +9,15 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@langchain/community": "^0.3.57",
+    "@langchain/core": "^0.3.79",
+    "@langchain/langgraph": "^0.2.74",
+    "@langchain/openai": "^0.5.16",
+    "langchain": "^0.3.36",
     "next": "16.2.0",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

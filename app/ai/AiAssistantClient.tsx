@@ -1,0 +1,159 @@
+'use client';
+
+import { FormEvent, useMemo, useRef, useState } from 'react';
+
+type ChatMessage = {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+};
+
+type Props = {
+  token?: string;
+};
+
+export default function AiAssistantClient({ token }: Props) {
+  const [threadId] = useState(() => crypto.randomUUID());
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      id: crypto.randomUUID(),
+      role: 'assistant',
+      content: '您好，我是您的AI助手，有什么可以帮您的吗？',
+    },
+  ]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const messageEndRef = useRef<HTMLDivElement | null>(null);
+
+  const canSend = useMemo(
+    () => input.trim().length > 0 && !loading,
+    [input, loading],
+  );
+
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!canSend) {
+      return;
+    }
+
+    const question = input.trim();
+    const userMessage: ChatMessage = {
+      id: crypto.randomUUID(),
+      role: 'user',
+      content: question,
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    setInput('');
+    setLoading(true);
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { authentication: token } : {}),
+        },
+        body: JSON.stringify({
+          question,
+          threadId,
+        }),
+      });
+
+      const data = (await response.json()) as {
+        data?: string;
+        error?: string;
+        detail?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(data.detail || data.error || 'request failed');
+      }
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: data.data || '抱歉，我无法理解您的问题。',
+        },
+      ]);
+      setTimeout(() => {
+        messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 50);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'unknown error';
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: `请求失败，请稍后再试。错误类型：${message}`,
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="mx-auto flex h-full w-full max-w-6xl flex-col overflow-hidden rounded-[20px] bg-gradient-to-br from-white via-[#eef1ff] to-[#c6d3ff] shadow-[0_4px_12px_rgba(0,0,0,0.1)]">
+      <div className="border-b border-white/40 bg-white/45 px-5 py-4 backdrop-blur-sm">
+        <h1 className="text-base font-semibold text-slate-800">眼科智能助手</h1>
+        <p className="text-xs text-slate-500">支持问答、病例查询与PDF分析</p>
+      </div>
+
+      <div className="flex-1 space-y-4 overflow-y-auto px-5 py-5">
+        {messages.map((message) => (
+          <div
+            key={message.id}
+            className={`flex max-w-full items-start gap-3 ${message.role === 'user' ? 'flex-row-reverse justify-end' : 'justify-start'}`}
+          >
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-xs font-semibold text-slate-500 shadow-[0_2px_4px_rgba(0,0,0,0.1)]">
+              {message.role === 'user' ? '用户' : 'AI'}
+            </div>
+            <div
+              className={`max-w-[70%] break-words px-4 py-3 text-sm leading-6 ${
+                message.role === 'user'
+                  ? 'rounded-[12px_12px_0_12px] bg-[#1890ff] text-white'
+                  : 'rounded-[12px_12px_12px_0] bg-white text-[#333333] shadow-[0_2px_8px_rgba(0,0,0,0.1)]'
+              }`}
+            >
+              {message.content}
+            </div>
+          </div>
+        ))}
+        {loading && (
+          <div className="flex items-center gap-3 text-sm text-slate-500">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-xs font-semibold shadow-[0_2px_4px_rgba(0,0,0,0.1)]">
+              AI
+            </div>
+            <div className="rounded-[12px_12px_12px_0] bg-white px-4 py-2 shadow-[0_2px_8px_rgba(0,0,0,0.1)]">
+              正在思考中...
+            </div>
+          </div>
+        )}
+        <div ref={messageEndRef} />
+      </div>
+
+      <form
+        onSubmit={onSubmit}
+        className="flex items-center gap-2 bg-white px-5 py-4 shadow-[0_-2px_12px_rgba(0,0,0,0.05)]"
+      >
+        <input
+          value={input}
+          onChange={(event) => setInput(event.target.value)}
+          placeholder="请输入消息..."
+          className="h-11 flex-1 rounded-l-[20px] rounded-r-none border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none focus:border-[#1890ff]"
+        />
+        <button
+          type="submit"
+          disabled={!canSend}
+          className="h-11 rounded-r-[20px] rounded-l-none border border-[#1890ff] bg-[#1890ff] px-5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-300"
+        >
+          {loading ? '发送中...' : '发送'}
+        </button>
+      </form>
+    </div>
+  );
+}
