@@ -7,6 +7,15 @@
 - 通过 Function Calling 对接现有 Java 业务接口
 - 内部 RAG 检索 + 千问原生联网搜索
 
+## 当前进度（已实现）
+
+1. 最基础 LLM 调用已实现（Qwen/OpenAI 兼容模式）。
+2. 联网搜索已实现（支持前端开关控制，并传入后端）。
+3. RAG 静态知识库检索已实现（种子库 + 检索服务解耦）。
+4. Function-call 调用 Java 接口已实现（按钮触发专用，普通输入不触发业务工具）。
+5. 医疗回答规范已外置文档加载（非硬编码在代码中）。
+6. RAG 批量校验脚本已实现（命中率与引用完整率统计）。
+
 ## 1. 安装与环境准备
 
 ```bash
@@ -23,6 +32,9 @@ cp .env.example .env.local
 - `AGENT_SYSTEM_PROMPT_PATH`（可选，系统提示词文件路径）
 - `JAVA_API_BASE_URL`
 - Java 侧具体接口路径
+  - `JAVA_PATIENT_LIST_PATH`
+  - `JAVA_DIAGNOSIS_HISTORY_PATH`
+  - `JAVA_APPOINTMENTS_PATH`
 
 ## 2. 启动项目
 
@@ -67,7 +79,12 @@ lib/
       search-service.ts              # RAG 轻量检索服务（可后续替换向量库）
       types.ts                       # RAG 类型定义
     tools/
-      business-tools.ts      # Java 业务工具（病例查询）
+      business/
+        index.ts             # 业务工具聚合出口
+        java-api.ts          # Java 接口调用封装
+        patient-list.ts      # 患者列表工具
+        diagnosis-history.ts # 诊断记录工具
+        appointments.ts      # 预约管理工具
       rag-tools.ts           # RAG 工具（联网搜索由模型原生能力提供）
 ```
 
@@ -78,7 +95,7 @@ lib/
   -> POST /api/chat
   -> runAgent(lib/agent/index.ts)
   -> LangGraph 工具调用
-     -> business-tools.ts 调 Java 接口
+    -> business/* 调 Java 接口
       -> rag-tools.ts 做知识检索
     -> 模型原生联网搜索（QWEN_ENABLE_SEARCH）
   -> 返回答案到前端消息流
@@ -93,9 +110,16 @@ lib/
 ```json
 {
   "question": "帮我查询病人 1024 的病例信息",
-  "threadId": "可选，会话ID"
+  "threadId": "可选，会话ID",
+  "allowBusinessToolCall": false,
+  "preferredBusinessAction": "patient_list"
 }
 ```
+
+字段说明：
+
+- `allowBusinessToolCall`: 是否允许调用 Java 业务工具。普通输入应为 `false`。
+- `preferredBusinessAction`: 可选值 `patient_list | diagnosis_history | appointments`，用于快捷按钮场景。
 
 请求头（二选一）：
 
@@ -118,10 +142,18 @@ lib/
   - 检索配置在 `lib/agent/rag/config.ts`
   - 检索实现在 `lib/agent/rag/search-service.ts`
 - 当前是轻量检索版，后续可在不改工具接口的前提下替换为向量数据库检索（例如 PGVector、Milvus、Pinecone）。
-- 业务工具位于 `lib/agent/tools/business-tools.ts`，可按 Java 接口持续扩展。
+- 业务工具已拆分到 `lib/agent/tools/business/`，每个 function-call 单独文件管理，后续可按接口继续扩展。
 - 回答会在有检索命中时强制补齐引用格式：`[文档标题@版本号#章节]`。
 
-## 7. RAG 批量校验
+## 7. 下一步增强（未完成）
+
+1. 将轻量关键词检索升级为混合检索（向量 + 关键词 + 重排）。
+2. 扩充知识库内容粒度（从摘要级提升到段落级/章节级）。
+3. 强化规则校验（风险分级、禁用词、未命中硬约束）。
+4. 增加结构化回传（本次是否联网、是否调用业务工具、来源摘要）。
+5. 扩展评测集并按场景分开统计（普通问答、工具调用、时效性问题）。
+
+## 8. RAG 批量校验
 
 项目内置了 10 条问答校验集：`lib/agent/docs/rag-eval-qa.v1.json`。
 
@@ -137,17 +169,3 @@ npm run validate:rag
 - 输出每条问答的“命中/引用完整”结果。
 - 最终输出“命中率”和“引用完整率”。
 - 默认请求地址为 `http://localhost:3000/api/chat`，可通过环境变量 `CHAT_API_URL` 覆盖。
-
-问答主链路可用：前端提问到后端智能体返回答案，见 route.ts 和 index.ts
-RAG 已解耦并可检索：数据、配置、检索逻辑分离，见 knowledge-base.v1.json、config.ts、search-service.ts
-联网开关可控：用户可在页面选择开关联网并透传后端，见 AiAssistantClient.tsx、index.ts
-引用格式已强制补齐：回答会补 [文档标题@版本号#章节] 形式引用，见 index.ts
-批量校验脚本已就位：可批量跑 10 条问答并统计命中率与引用完整率，见 validate-rag.mjs
-还未完善的关键点
-
-RAG 命中率偏低：你当前实测大约 20%，说明检索质量还不够生产可用
-仍是轻量关键词检索：还没上向量检索与重排
-知识内容粒度不够：目前多是摘要级，不是可深答的原文切片级
-规则执行仍偏软：风险分级、禁用词、未命中硬约束还没做成严格校验器
-联网可用但可控性还可加强：还缺“本次回答是否联网、用了哪些来源”的结构化回传
-缺少系统化评测：现在只有 10 条样例，样本量偏小，且未分场景统计

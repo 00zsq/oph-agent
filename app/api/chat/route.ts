@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { runAgent } from '@/lib/agent';
+import type { BusinessToolAction } from '@/lib/agent/tools/business';
 
 export const runtime = 'nodejs';
 
@@ -27,6 +28,8 @@ export async function POST(request: NextRequest) {
       token?: string;
       threadId?: string;
       enableWebSearch?: boolean;
+      allowBusinessToolCall?: boolean;
+      preferredBusinessAction?: BusinessToolAction;
     };
 
     const question = body.question?.trim();
@@ -42,6 +45,8 @@ export async function POST(request: NextRequest) {
       threadId,
       question,
       enableWebSearch: body.enableWebSearch,
+      allowBusinessToolCall: body.allowBusinessToolCall,
+      preferredBusinessAction: body.preferredBusinessAction,
     });
 
     return NextResponse.json({

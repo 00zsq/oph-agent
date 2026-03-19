@@ -16,6 +16,35 @@ type Props = {
   token?: string;
 };
 
+type BusinessAction = 'patient_list' | 'diagnosis_history' | 'appointments';
+
+type SendOptions = {
+  allowBusinessToolCall: boolean;
+  preferredBusinessAction?: BusinessAction;
+};
+
+const QUICK_ACTIONS: Array<{
+  key: BusinessAction;
+  label: string;
+  question: string;
+}> = [
+  {
+    key: 'patient_list',
+    label: '查询患者列表',
+    question: '请帮我查询当前患者列表（第1页，每页10条），并按要点总结。',
+  },
+  {
+    key: 'diagnosis_history',
+    label: '查询诊断记录',
+    question: '请帮我查询全部诊断记录（第1页，每页10条），并总结关键信息。',
+  },
+  {
+    key: 'appointments',
+    label: '查询预约管理',
+    question: '请帮我查询当前医生预约列表，并按待处理优先级总结。',
+  },
+];
+
 const TYPEWRITER_DELAY_MS = 16;
 const TYPEWRITER_CHUNK_SIZE = 2;
 
@@ -78,6 +107,11 @@ export default function AiAssistantClient({ token }: Props) {
     }
 
     const question = input.trim();
+    setInput('');
+    await sendQuestion(question, { allowBusinessToolCall: false });
+  }
+
+  async function sendQuestion(question: string, options: SendOptions) {
     const userMessage: ChatMessage = {
       id: crypto.randomUUID(),
       role: 'user',
@@ -85,7 +119,6 @@ export default function AiAssistantClient({ token }: Props) {
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    setInput('');
     setLoading(true);
 
     try {
@@ -99,6 +132,8 @@ export default function AiAssistantClient({ token }: Props) {
           question,
           threadId,
           enableWebSearch,
+          allowBusinessToolCall: options.allowBusinessToolCall,
+          preferredBusinessAction: options.preferredBusinessAction,
         }),
       });
 
@@ -128,6 +163,17 @@ export default function AiAssistantClient({ token }: Props) {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function onQuickAction(action: (typeof QUICK_ACTIONS)[number]) {
+    if (loading || typing) {
+      return;
+    }
+
+    await sendQuestion(action.question, {
+      allowBusinessToolCall: true,
+      preferredBusinessAction: action.key,
+    });
   }
 
   return (
@@ -288,24 +334,37 @@ export default function AiAssistantClient({ token }: Props) {
         <div ref={messageEndRef} />
       </div>
 
-      <form
-        onSubmit={onSubmit}
-        className="flex items-center gap-0 bg-white px-5 py-4 shadow-[0_-2px_12px_rgba(0,0,0,0.05)]"
-      >
-        <input
-          value={input}
-          onChange={(event) => setInput(event.target.value)}
-          placeholder="请输入消息..."
-          className="h-11 flex-1 rounded-l-[20px] rounded-r-none border border-r-0 border-slate-200 bg-white px-5 text-sm text-slate-900 outline-none focus:border-[#1890ff]"
-        />
-        <button
-          type="submit"
-          disabled={!canSend}
-          className="h-11 rounded-r-[20px] rounded-l-none border border-[#1890ff] bg-[#1890ff] px-5 text-sm font-medium text-white transition hover:bg-[#3a9cff] disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-300"
-        >
-          {loading ? '发送中...' : typing ? '输出中...' : '发送'}
-        </button>
-      </form>
+      <div className="bg-white px-5 pt-3 pb-2 shadow-[0_-2px_12px_rgba(0,0,0,0.05)]">
+        <div className="mb-2 flex flex-wrap gap-2">
+          {QUICK_ACTIONS.map((action) => (
+            <button
+              key={action.key}
+              type="button"
+              onClick={() => onQuickAction(action)}
+              disabled={loading || typing}
+              className="rounded-full border border-[#c8dcff] bg-[#f2f7ff] px-3 py-1 text-xs font-medium text-[#0e66b7] transition hover:bg-[#e8f1ff] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {action.label}
+            </button>
+          ))}
+        </div>
+
+        <form onSubmit={onSubmit} className="flex items-center gap-0">
+          <input
+            value={input}
+            onChange={(event) => setInput(event.target.value)}
+            placeholder="请输入消息..."
+            className="h-11 flex-1 rounded-l-[20px] rounded-r-none border border-r-0 border-slate-200 bg-white px-5 text-sm text-slate-900 outline-none focus:border-[#1890ff]"
+          />
+          <button
+            type="submit"
+            disabled={!canSend}
+            className="h-11 rounded-r-[20px] rounded-l-none border border-[#1890ff] bg-[#1890ff] px-5 text-sm font-medium text-white transition hover:bg-[#3a9cff] disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-300"
+          >
+            {loading ? '发送中...' : typing ? '输出中...' : '发送'}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

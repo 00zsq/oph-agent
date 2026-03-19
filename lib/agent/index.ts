@@ -2,7 +2,8 @@ import { ChatOpenAI } from '@langchain/openai';
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { createBusinessTools } from './tools/business-tools';
+import { createBusinessTools } from './tools/business';
+import type { BusinessToolAction } from './tools/business';
 import { createRagTools } from './tools/rag-tools';
 
 type AgentRequest = {
@@ -10,6 +11,8 @@ type AgentRequest = {
   threadId: string;
   question: string;
   enableWebSearch?: boolean;
+  allowBusinessToolCall?: boolean;
+  preferredBusinessAction?: BusinessToolAction;
 };
 
 const CITATION_PATTERN = /\[[^\[\]@]+@[^\[\]#]+#[^\[\]]+\]/g;
@@ -172,13 +175,31 @@ function getModel(enableWebSearch?: boolean) {
 
 export async function runAgent(req: AgentRequest): Promise<string> {
   const model = getModel(req.enableWebSearch);
-  const tools = [...createBusinessTools(req.token), ...createRagTools()];
+  const businessTools = req.allowBusinessToolCall
+    ? createBusinessTools(
+        req.token,
+        req.preferredBusinessAction ? [req.preferredBusinessAction] : undefined,
+      )
+    : [];
+  const tools = [...businessTools, ...createRagTools()];
   const prompt = await loadSystemPrompt();
+
+  const runtimePrompt = req.allowBusinessToolCall
+    ? req.preferredBusinessAction
+      ? `${prompt}
+
+本轮任务说明：必须优先调用业务工具完成查询，且仅可使用当前允许的业务工具。请先调用工具，再基于工具结果输出结论。`
+      : `${prompt}
+
+本轮任务说明：允许调用业务工具，请优先工具查询后再回答。`
+    : `${prompt}
+
+本轮任务说明：禁止调用业务工具，仅可进行普通问答与知识检索。`;
 
   const agent = createReactAgent({
     llm: model,
     tools,
-    prompt,
+    prompt: runtimePrompt,
     name: 'oph-agent',
   });
 

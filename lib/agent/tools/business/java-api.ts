@@ -1,27 +1,4 @@
-import { tool } from '@langchain/core/tools';
-import { z } from 'zod';
-
-type JsonValue =
-  | string
-  | number
-  | boolean
-  | null
-  | JsonValue[]
-  | { [key: string]: JsonValue };
-
-type JavaApiSuccess = {
-  ok: true;
-  status: number;
-  data: JsonValue;
-};
-
-type JavaApiFailure = {
-  ok: false;
-  status: number;
-  error: string;
-};
-
-type JavaApiResult = JavaApiSuccess | JavaApiFailure;
+import type { JavaApiResult, JsonValue } from './types';
 
 function getRequiredEnv(name: string): string {
   const value = process.env[name];
@@ -48,7 +25,7 @@ async function safeReadJson(response: Response): Promise<JsonValue | string> {
   }
 }
 
-async function callJavaApi(
+export async function callJavaApi(
   token: string | undefined,
   path: string,
   method: 'GET' | 'POST',
@@ -106,24 +83,4 @@ async function callJavaApi(
     status: response.status,
     data: result as JsonValue,
   };
-}
-
-export function createBusinessTools(token?: string) {
-  const getPatientCaseById = tool(
-    async ({ patientId }) => {
-      const path =
-        process.env.JAVA_PATIENT_CASE_PATH ?? '/patient/getPatientById';
-      const result = await callJavaApi(token, path, 'GET', { patientId });
-      return JSON.stringify(result);
-    },
-    {
-      name: 'get_patient_case_by_id',
-      description: '根据患者 ID 从现有 Java 后端查询病例详情。',
-      schema: z.object({
-        patientId: z.string().describe('医院系统中的患者 ID'),
-      }),
-    },
-  );
-
-  return [getPatientCaseById];
 }
