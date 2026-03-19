@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
   if (!base) {
     return NextResponse.json(
       {
-        error: 'JAVA_API_BASE_URL is not configured',
+        error: '未配置 JAVA_API_BASE_URL',
       },
       { status: 500 },
     );

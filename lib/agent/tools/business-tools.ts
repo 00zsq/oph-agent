@@ -26,7 +26,7 @@ type JavaApiResult = JavaApiSuccess | JavaApiFailure;
 function getRequiredEnv(name: string): string {
   const value = process.env[name];
   if (!value) {
-    throw new Error(`Missing required environment variable: ${name}`);
+    throw new Error(`缺少必填环境变量：${name}`);
   }
   return value;
 }
@@ -83,11 +83,11 @@ async function callJavaApi(
     });
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : 'Java backend is unavailable';
+      error instanceof Error ? error.message : 'Java 后端服务不可用';
     return {
       ok: false,
       status: 503,
-      error: `Failed to call Java backend: ${message}`,
+      error: `调用 Java 后端失败：${message}`,
     };
   }
 
@@ -118,10 +118,9 @@ export function createBusinessTools(token?: string) {
     },
     {
       name: 'get_patient_case_by_id',
-      description:
-        'Query patient case details by patient id from the existing Java backend.',
+      description: '根据患者 ID 从现有 Java 后端查询病例详情。',
       schema: z.object({
-        patientId: z.string().describe('The patient id in the hospital system'),
+        patientId: z.string().describe('医院系统中的患者 ID'),
       }),
     },
   );
@@ -137,16 +136,13 @@ export function createBusinessTools(token?: string) {
     },
     {
       name: 'analyze_pdf_report',
-      description:
-        'Analyze an uploaded PDF report using existing Java backend capability and return summary.',
+      description: '调用现有 Java 后端能力分析已上传的 PDF 报告并返回摘要。',
       schema: z.object({
-        fileUrl: z.string().url().describe('The uploaded PDF URL to analyze'),
+        fileUrl: z.string().url().describe('待分析的 PDF 文件地址'),
         userQuestion: z
           .string()
-          .describe(
-            'Optional focus question, for example: summarize diagnosis conclusion',
-          )
-          .default('Summarize the main diagnosis from this report.'),
+          .describe('可选聚焦问题，例如：请总结诊断结论')
+          .default('请总结这份报告中的主要诊断结论。'),
       }),
     },
   );

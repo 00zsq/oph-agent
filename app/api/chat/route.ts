@@ -30,10 +30,7 @@ export async function POST(request: NextRequest) {
 
     const question = body.question?.trim();
     if (!question) {
-      return NextResponse.json(
-        { error: 'question is required' },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: '问题不能为空' }, { status: 400 });
     }
 
     const token = getBearerToken(request, body.token);
@@ -50,12 +47,11 @@ export async function POST(request: NextRequest) {
       data: answer,
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Unknown server error';
+    const message = error instanceof Error ? error.message : '未知服务端错误';
 
     return NextResponse.json(
       {
-        error: 'AI agent failed',
+        error: 'AI 智能体处理失败',
         detail: message,
       },
       { status: 500 },

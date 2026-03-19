@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Oph Agent Service',
-  description: 'SSR AI assistant powered by Next.js and LangGraph',
+  title: '眼科智能体服务',
+  description: '基于 Next.js 与 LangGraph 的眼科 AI 助手服务',
 };
 
 export default function RootLayout({
@@ -24,7 +24,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="zh-CN"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>

@@ -12,24 +12,22 @@ type KnowledgeDoc = {
 const KNOWLEDGE_BASE: KnowledgeDoc[] = [
   {
     id: 'doc-1',
-    title: 'Diabetic Retinopathy Follow-up',
-    source: 'internal-clinical-guide-v1',
+    title: '糖尿病视网膜病变随访建议',
+    source: '院内临床指南-v1',
     content:
-      'For mild non-proliferative diabetic retinopathy without macular edema, follow-up is usually every 6 to 12 months.',
+      '对于无黄斑水肿的轻度非增殖性糖尿病视网膜病变，通常建议每 6 到 12 个月复查一次。',
   },
   {
     id: 'doc-2',
-    title: 'Glaucoma Basic Risk',
-    source: 'internal-clinical-guide-v1',
-    content:
-      'Important risk factors include elevated intraocular pressure, family history, age, and thin cornea.',
+    title: '青光眼基础风险因素',
+    source: '院内临床指南-v1',
+    content: '重要风险因素包括眼压升高、家族史、年龄增长以及角膜偏薄。',
   },
   {
     id: 'doc-3',
-    title: 'Common Advice Disclaimer',
-    source: 'service-policy',
-    content:
-      'AI generated content is for decision support only and must be reviewed by licensed clinicians before treatment decisions.',
+    title: '医疗建议免责声明',
+    source: '服务策略',
+    content: 'AI 生成内容仅用于辅助决策，治疗决策前必须由执业临床医生审核。',
   },
 ];
 
@@ -68,10 +66,9 @@ export function createRagTools() {
     },
     {
       name: 'search_internal_knowledge_base',
-      description:
-        'Search local ophthalmology documents from the internal RAG knowledge base.',
+      description: '从内部 RAG 知识库中检索眼科相关文档。',
       schema: z.object({
-        query: z.string().describe('Question or keywords for retrieval'),
+        query: z.string().describe('检索问题或关键词'),
         topK: z.number().min(1).max(8).default(3),
       }),
     },
@@ -94,16 +91,15 @@ export function createRagTools() {
         return JSON.stringify({
           ok: false,
           reason:
-            'TAVILY_API_KEY is not configured. Set TAVILY_API_KEY to enable live web search.',
+            '未配置 TAVILY_API_KEY，暂时无法使用联网搜索。请先配置后再试。',
           query,
         });
       },
       {
         name: 'search_web_live',
-        description:
-          'Search web for latest information. Returns setup hints if live search provider is not configured.',
+        description: '联网检索最新信息；若未配置搜索服务，则返回配置提示。',
         schema: z.object({
-          query: z.string().describe('Web search query'),
+          query: z.string().describe('联网搜索关键词'),
         }),
       },
     );

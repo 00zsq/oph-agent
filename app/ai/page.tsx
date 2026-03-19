@@ -13,9 +13,7 @@ export default async function AiPage({ searchParams }: PageProps) {
 
   return (
     <main className="h-dvh w-full overflow-hidden bg-[#f3f4f6] p-3 md:p-4">
-      <div className="h-full w-full">
-        <AiAssistantClient token={token} />
-      </div>
+      <AiAssistantClient token={token} />
     </main>
   );
 }

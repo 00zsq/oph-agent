@@ -10,26 +10,42 @@ type AgentRequest = {
 };
 
 function getModel() {
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.OPENAI_API_KEY ?? process.env.DASHSCOPE_API_KEY;
   if (!apiKey) {
-    throw new Error('OPENAI_API_KEY is required');
+    throw new Error('缺少模型密钥：请配置 OPENAI_API_KEY 或 DASHSCOPE_API_KEY');
   }
 
-  const modelName = process.env.OPENAI_MODEL ?? 'gpt-4o-mini';
+  const modelName = process.env.OPENAI_MODEL ?? 'qwen3.5-plus';
+  const baseURL =
+    process.env.OPENAI_BASE_URL ??
+    process.env.DASHSCOPE_BASE_URL ??
+    'https://dashscope.aliyuncs.com/compatible-mode/v1';
+  const enableThinking =
+    (process.env.QWEN_ENABLE_THINKING ?? 'false').toLowerCase() === 'true';
 
   return new ChatOpenAI({
     apiKey,
     modelName,
+    configuration: {
+      baseURL,
+    },
+    ...(enableThinking
+      ? {
+          modelKwargs: {
+            enable_thinking: true,
+          },
+        }
+      : {}),
     temperature: 0.1,
   });
 }
 
 function buildSystemPrompt() {
   return [
-    'You are an ophthalmology assistant for hospital workflows.',
-    'Always prefer tool calls when user asks for patient data, PDF analysis, internal knowledge retrieval, or live web updates.',
-    'Do not fabricate patient records. If tool data is missing, clearly state it and suggest next action.',
-    'For medical output, include a short safety note to consult licensed clinicians.',
+    '你是面向医院业务流程的眼科智能助手。',
+    '当用户需要病例数据、PDF分析、内部知识检索或联网信息时，优先调用工具，不要直接臆测。',
+    '严禁编造患者记录；如果工具没有返回数据，必须明确说明并给出下一步建议。',
+    '所有医疗相关回答都要附带简短安全提示：最终请由执业医生判断。',
   ].join(' ');
 }
 
@@ -84,5 +100,5 @@ export async function runAgent(req: AgentRequest): Promise<string> {
       .trim();
   }
 
-  return 'No response from model.';
+  return '模型未返回有效内容。';
 }

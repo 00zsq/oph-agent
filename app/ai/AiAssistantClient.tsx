@@ -72,7 +72,7 @@ export default function AiAssistantClient({ token }: Props) {
       };
 
       if (!response.ok) {
-        throw new Error(data.detail || data.error || 'request failed');
+        throw new Error(data.detail || data.error || '请求失败');
       }
 
       setMessages((prev) => [
@@ -84,7 +84,7 @@ export default function AiAssistantClient({ token }: Props) {
         },
       ]);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'unknown error';
+      const message = error instanceof Error ? error.message : '未知错误';
       setMessages((prev) => [
         ...prev,
         {
