@@ -1,14 +1,10 @@
 'use client';
 
 import Image from 'next/image';
-import {
-  FormEvent,
-  ReactNode,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import rehypeSanitize from 'rehype-sanitize';
+import remarkGfm from 'remark-gfm';
 
 type ChatMessage = {
   id: string;
@@ -19,56 +15,6 @@ type ChatMessage = {
 type Props = {
   token?: string;
 };
-
-function renderInlineMarkdown(text: string): ReactNode[] {
-  return text.split(/(\*\*[^*]+\*\*)/g).map((part, index) => {
-    if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
-      return (
-        <strong key={`${part}-${index}`} className="font-semibold">
-          {part.slice(2, -2)}
-        </strong>
-      );
-    }
-
-    return <span key={`${part}-${index}`}>{part}</span>;
-  });
-}
-
-function renderAssistantMarkdown(content: string): ReactNode {
-  const lines = content.split('\n');
-
-  return (
-    <div className="space-y-1">
-      {lines.map((rawLine, index) => {
-        if (rawLine.trim().length === 0) {
-          return <div key={`empty-${index}`} className="h-2" />;
-        }
-
-        const bulletMatch = rawLine.match(/^\s*[-*]\s+(.*)$/);
-        if (bulletMatch) {
-          return (
-            <div key={`bullet-${index}`} className="flex gap-2">
-              <span className="pt-[2px]">•</span>
-              <span>{renderInlineMarkdown(bulletMatch[1])}</span>
-            </div>
-          );
-        }
-
-        const numberedMatch = rawLine.match(/^\s*(\d+)\.\s+(.*)$/);
-        if (numberedMatch) {
-          return (
-            <div key={`num-${index}`} className="flex gap-2">
-              <span>{numberedMatch[1]}.</span>
-              <span>{renderInlineMarkdown(numberedMatch[2])}</span>
-            </div>
-          );
-        }
-
-        return <p key={`line-${index}`}>{renderInlineMarkdown(rawLine)}</p>;
-      })}
-    </div>
-  );
-}
 
 const TYPEWRITER_DELAY_MS = 16;
 const TYPEWRITER_CHUNK_SIZE = 2;
@@ -242,7 +188,82 @@ export default function AiAssistantClient({ token }: Props) {
                   />
                 </div>
                 <div className="max-w-[70%] break-words rounded-[12px_12px_12px_0] bg-white px-4 py-3 text-sm leading-6 text-[#333333] shadow-[0_2px_8px_rgba(0,0,0,0.1)]">
-                  {renderAssistantMarkdown(message.content)}
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    rehypePlugins={[rehypeSanitize]}
+                    components={{
+                      h1: ({ children }) => (
+                        <h1 className="mb-2 text-base font-semibold">
+                          {children}
+                        </h1>
+                      ),
+                      h2: ({ children }) => (
+                        <h2 className="mb-2 text-[15px] font-semibold">
+                          {children}
+                        </h2>
+                      ),
+                      h3: ({ children }) => (
+                        <h3 className="mb-1 text-sm font-semibold">
+                          {children}
+                        </h3>
+                      ),
+                      p: ({ children }) => (
+                        <p className="mb-2 last:mb-0">{children}</p>
+                      ),
+                      ul: ({ children }) => (
+                        <ul className="mb-2 list-disc space-y-1 pl-5 last:mb-0">
+                          {children}
+                        </ul>
+                      ),
+                      ol: ({ children }) => (
+                        <ol className="mb-2 list-decimal space-y-1 pl-5 last:mb-0">
+                          {children}
+                        </ol>
+                      ),
+                      li: ({ children }) => <li>{children}</li>,
+                      hr: () => <hr className="my-3 border-slate-200" />,
+                      table: ({ children }) => (
+                        <div className="my-2 overflow-x-auto">
+                          <table className="min-w-full border-collapse text-xs">
+                            {children}
+                          </table>
+                        </div>
+                      ),
+                      thead: ({ children }) => (
+                        <thead className="bg-slate-50">{children}</thead>
+                      ),
+                      th: ({ children }) => (
+                        <th className="border border-slate-200 px-2 py-1 text-left font-semibold">
+                          {children}
+                        </th>
+                      ),
+                      td: ({ children }) => (
+                        <td className="border border-slate-200 px-2 py-1 align-top">
+                          {children}
+                        </td>
+                      ),
+                      a: ({ children, href }) => (
+                        <a
+                          href={href}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[#0e66b7] underline"
+                        >
+                          {children}
+                        </a>
+                      ),
+                      strong: ({ children }) => (
+                        <strong className="font-semibold">{children}</strong>
+                      ),
+                      code: ({ children }) => (
+                        <code className="rounded bg-slate-100 px-1 py-[1px] text-xs">
+                          {children}
+                        </code>
+                      ),
+                    }}
+                  >
+                    {message.content}
+                  </ReactMarkdown>
                 </div>
               </>
             )}

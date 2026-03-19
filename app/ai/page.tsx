@@ -12,7 +12,7 @@ export default async function AiPage({ searchParams }: PageProps) {
   const token = Array.isArray(tokenParam) ? tokenParam[0] : tokenParam;
 
   return (
-    <main className="h-dvh w-full overflow-hidden bg-[#f3f4f6] p-3 md:p-4">
+    <main className="h-dvh min-h-full w-full overflow-hidden bg-[#f3f4f6]">
       <AiAssistantClient token={token} />
     </main>
   );
