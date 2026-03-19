@@ -1,163 +1,137 @@
-# 眼科智能体服务（Next.js + LangGraph）
+# 眼科智能体服务（Oph Agent）
 
-该服务提供以下能力：
+面向眼科业务场景的智能问答服务，基于 Next.js App Router + LangGraph。当前版本已经打通以下主链路：
 
-- SSR AI 助手页面：`/ai`
-- 智能体对话接口：`/api/chat`
-- 通过 Function Calling 对接现有 Java 业务接口
-- 内部 RAG 检索 + 千问原生联网搜索
+- AI 聊天页面（/ai）
+- 对话 API（/api/chat）
+- 内部 RAG 检索
+- 千问原生联网搜索
+- Java 业务接口 Function-call（按钮触发）
 
-## 当前进度（已实现）
+## 1. 架构总览
 
-1. 最基础 LLM 调用已实现（Qwen/OpenAI 兼容模式）。
-2. 联网搜索已实现（支持前端开关控制，并传入后端）。
-3. RAG 静态知识库检索已实现（种子库 + 检索服务解耦）。
-4. Function-call 调用 Java 接口已实现（按钮触发专用，普通输入不触发业务工具）。
-5. 医疗回答规范已外置文档加载（非硬编码在代码中）。
-6. RAG 批量校验脚本已实现（命中率与引用完整率统计）。
+```mermaid
+flowchart TD
+    UI[前端聊天页 /ai] --> API[/api/chat]
+    API --> AGENT[LangGraph Agent]
 
-## 1. 安装与环境准备
+    AGENT --> RAG[内部知识检索 search_internal_knowledge_base]
+    AGENT --> WEB[千问原生联网搜索 enable_search]
+    AGENT --> BIZ[业务工具组 business/*]
+
+    BIZ --> JAVA[现有 Java 后端接口]
+
+    RAG --> MERGE[答案综合与引用补齐]
+    WEB --> MERGE
+    BIZ --> MERGE
+
+    MERGE --> UI
+```
+
+## 2. 当前能力（已实现）
+
+### 2.1 对话与页面能力
+
+1. `/ai` 页面可直接使用，支持 iframe 嵌入。
+2. 支持联网开关（前端控制，后端按请求生效）。
+3. 支持 Markdown 富文本渲染（标题、列表、表格、链接等）。
+4. 普通输入与快捷按钮分流。
+
+### 2.2 Agent 与模型能力
+
+1. 使用 OpenAI 兼容接口接入 Qwen（DashScope 兼容地址）。
+2. 可通过环境变量控制模型名、是否深度思考、是否联网、是否强制联网。
+3. 系统提示词从文档加载（非硬编码）。
+
+### 2.3 RAG 能力
+
+1. 已实现静态知识库检索（种子文档 + 检索服务解耦）。
+2. 命中时自动附带引用。
+3. 最终答案有引用兜底补齐逻辑（格式：`[文档标题@版本号#章节]`）。
+
+### 2.4 Function-call 能力
+
+1. 已接入 3 个业务工具：患者列表、诊断记录、预约管理。
+2. 工具按“一个接口一个文件”拆分，便于扩展。
+3. 默认规则：普通输入不触发业务工具，仅快捷按钮触发。
+
+### 2.5 评测能力
+
+1. 已提供批量 RAG 校验脚本。
+2. 可统计命中率与引用完整率。
+
+## 3. 使用方法
+
+### 3.1 安装与配置
 
 ```bash
 npm install
 cp .env.example .env.local
 ```
 
-请在 `.env.local` 中填写：
+在 `.env.local` 中至少配置：
 
-- `OPENAI_API_KEY`（或 `DASHSCOPE_API_KEY`）
-- `OPENAI_BASE_URL`（百炼兼容地址示例已提供）
+- `OPENAI_API_KEY` 或 `DASHSCOPE_API_KEY`
+- `OPENAI_BASE_URL`
 - `OPENAI_MODEL`
-- `QWEN_ENABLE_SEARCH`（是否启用联网搜索）
-- `AGENT_SYSTEM_PROMPT_PATH`（可选，系统提示词文件路径）
+- `QWEN_ENABLE_SEARCH`
 - `JAVA_API_BASE_URL`
-- Java 侧具体接口路径
-  - `JAVA_PATIENT_LIST_PATH`
-  - `JAVA_DIAGNOSIS_HISTORY_PATH`
-  - `JAVA_APPOINTMENTS_PATH`
+- `JAVA_PATIENT_LIST_PATH`
+- `JAVA_DIAGNOSIS_HISTORY_PATH`
+- `JAVA_APPOINTMENTS_PATH`
 
-## 2. 启动项目
+可选项：
+
+- `QWEN_ENABLE_THINKING`
+- `QWEN_FORCED_SEARCH`
+- `AGENT_SYSTEM_PROMPT_PATH`
+
+### 3.2 启动
 
 ```bash
 npm run dev
 ```
 
-浏览器访问：`http://localhost:3000/ai`
+访问：`http://localhost:3000/ai`
 
-## 3. 在现有 Vue 系统通过 iframe 嵌入
+### 3.3 iframe 嵌入（Vue 等宿主系统）
 
 ```html
 <iframe
   src="http://localhost:3000/ai?token=YOUR_TOKEN"
-  style="width: 100%; height: 100%; border: 0;"
+  style="width:100%;height:100%;border:0;"
   allow="clipboard-read; clipboard-write"
 ></iframe>
 ```
 
-## 4. 项目架构
+### 3.4 对话接口调用
 
-### 4.1 目录结构
+接口：`POST /api/chat`
 
-```text
-app/
-  ai/
-    page.tsx                 # AI 页面入口（读取 token）
-    AiAssistantClient.tsx    # 聊天 UI 与前端调用逻辑
-  api/
-    chat/route.ts            # 对话 API，调用 LangGraph 智能体
-  layout.tsx                 # 全局布局
-  page.tsx                   # 首页说明
-
-lib/
-  agent/
-    index.ts                 # 智能体入口（模型、Prompt、工具挂载）
-    docs/
-      medical-response-policy.v1.md  # 医疗回答规范与系统提示词主文件
-      knowledge-base.v1.json         # RAG 首批知识库种子文档
-    rag/
-      config.ts                      # RAG 检索参数配置（topK、阈值等）
-      search-service.ts              # RAG 轻量检索服务（可后续替换向量库）
-      types.ts                       # RAG 类型定义
-    tools/
-      business/
-        index.ts             # 业务工具聚合出口
-        java-api.ts          # Java 接口调用封装
-        patient-list.ts      # 患者列表工具
-        diagnosis-history.ts # 诊断记录工具
-        appointments.ts      # 预约管理工具
-      rag-tools.ts           # RAG 工具（联网搜索由模型原生能力提供）
-```
-
-### 4.2 运行链路
-
-```text
-前端 /ai 页面
-  -> POST /api/chat
-  -> runAgent(lib/agent/index.ts)
-  -> LangGraph 工具调用
-    -> business/* 调 Java 接口
-      -> rag-tools.ts 做知识检索
-    -> 模型原生联网搜索（QWEN_ENABLE_SEARCH）
-  -> 返回答案到前端消息流
-```
-
-## 5. API 契约
-
-### 5.1 POST `/api/chat`
-
-请求体：
+请求体示例：
 
 ```json
 {
-  "question": "帮我查询病人 1024 的病例信息",
-  "threadId": "可选，会话ID",
-  "allowBusinessToolCall": false,
+  "question": "请帮我查询当前患者列表（第1页，每页10条）",
+  "threadId": "optional-thread-id",
+  "enableWebSearch": true,
+  "allowBusinessToolCall": true,
   "preferredBusinessAction": "patient_list"
 }
 ```
 
 字段说明：
 
-- `allowBusinessToolCall`: 是否允许调用 Java 业务工具。普通输入应为 `false`。
-- `preferredBusinessAction`: 可选值 `patient_list | diagnosis_history | appointments`，用于快捷按钮场景。
+- `allowBusinessToolCall`：是否允许调用业务工具。
+- `preferredBusinessAction`：可选值 `patient_list | diagnosis_history | appointments`。
+- `enableWebSearch`：是否允许模型联网。
 
-请求头（二选一）：
+请求头支持：
 
-- `authentication: <token>`（兼容现有 Java 头）
+- `authentication: <token>`（兼容旧系统）
 - `Authorization: Bearer <token>`
 
-响应体：
-
-```json
-{
-  "threadId": "session-id",
-  "data": "助手回答内容"
-}
-```
-
-## 6. 当前实现说明
-
-- RAG 已按“数据/配置/检索逻辑”解耦：
-  - 文档数据在 `lib/agent/docs/knowledge-base.v1.json`
-  - 检索配置在 `lib/agent/rag/config.ts`
-  - 检索实现在 `lib/agent/rag/search-service.ts`
-- 当前是轻量检索版，后续可在不改工具接口的前提下替换为向量数据库检索（例如 PGVector、Milvus、Pinecone）。
-- 业务工具已拆分到 `lib/agent/tools/business/`，每个 function-call 单独文件管理，后续可按接口继续扩展。
-- 回答会在有检索命中时强制补齐引用格式：`[文档标题@版本号#章节]`。
-
-## 7. 下一步增强（未完成）
-
-1. 将轻量关键词检索升级为混合检索（向量 + 关键词 + 重排）。
-2. 扩充知识库内容粒度（从摘要级提升到段落级/章节级）。
-3. 强化规则校验（风险分级、禁用词、未命中硬约束）。
-4. 增加结构化回传（本次是否联网、是否调用业务工具、来源摘要）。
-5. 扩展评测集并按场景分开统计（普通问答、工具调用、时效性问题）。
-
-## 8. RAG 批量校验
-
-项目内置了 10 条问答校验集：`lib/agent/docs/rag-eval-qa.v1.json`。
-
-执行命令：
+### 3.5 批量评测
 
 ```bash
 npm run validate:rag
@@ -165,7 +139,49 @@ npm run validate:rag
 
 说明：
 
-- 该脚本会调用 `/api/chat` 批量提问。
-- 输出每条问答的“命中/引用完整”结果。
-- 最终输出“命中率”和“引用完整率”。
-- 默认请求地址为 `http://localhost:3000/api/chat`，可通过环境变量 `CHAT_API_URL` 覆盖。
+1. 读取问答集：`lib/agent/docs/rag-eval-qa.v1.json`。
+2. 默认请求：`http://localhost:3000/api/chat`。
+3. 输出每题结果与汇总指标。
+
+## 4. 目录说明
+
+```text
+app/
+  ai/
+    page.tsx
+    AiAssistantClient.tsx
+  api/
+    chat/route.ts
+
+lib/
+  agent/
+    index.ts
+    docs/
+      medical-response-policy.v1.md
+      knowledge-base.v1.json
+      rag-eval-qa.v1.json
+    rag/
+      config.ts
+      search-service.ts
+      types.ts
+    tools/
+      rag-tools.ts
+      business/
+        index.ts
+        java-api.ts
+        patient-list.ts
+        diagnosis-history.ts
+        appointments.ts
+        types.ts
+
+scripts/
+  validate-rag.mjs
+```
+
+## 5. 当前已知限制
+
+1. RAG 目前仍以轻量关键词检索为主，复杂问题命中率有限。
+2. 联网/工具调用结果尚未结构化回传到前端。
+3. 业务工具覆盖仍偏基础（仅 3 类查询）。
+
+以上限制和后续计划见 `plan.md`。
