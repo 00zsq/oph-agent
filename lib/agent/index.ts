@@ -17,6 +17,7 @@ type AgentRequest = {
 
 const CITATION_PATTERN = /\[[^\[\]@]+@[^\[\]#]+#[^\[\]]+\]/g;
 
+// 将消息内容转换为纯文本，适用于字符串或包含文本字段的对象数组
 function toMessageText(content: unknown): string {
   if (typeof content === 'string') {
     return content;
@@ -42,6 +43,7 @@ function toMessageText(content: unknown): string {
     .trim();
 }
 
+// 从消息数组中提取所有符合引用格式的字符串，支持直接文本和嵌套在JSON中的引用
 function extractCitationsFromMessages(messages: unknown[]): string[] {
   const citations = new Set<string>();
 
@@ -81,13 +83,14 @@ function extractCitationsFromMessages(messages: unknown[]): string[] {
         }
       }
     } catch {
-      // ignore parse failures for non-json text
+      // 忽略解析错误，继续处理下一条消息
     }
   }
 
   return Array.from(citations);
 }
 
+// 如果答案中已经包含引用格式，或者没有新的引用，则直接返回原答案；否则在答案末尾添加引用列表
 function enforceCitationFormat(answer: string, citations: string[]): string {
   if (!answer.trim()) {
     return answer;
@@ -107,6 +110,7 @@ function enforceCitationFormat(answer: string, citations: string[]): string {
 
 let promptCache: string | null = null;
 
+// 加载系统提示词，优先从环境变量指定的路径加载，失败时使用默认提示词，并缓存结果以避免重复读取文件
 async function loadSystemPrompt() {
   if (promptCache) {
     return promptCache;
@@ -125,13 +129,13 @@ async function loadSystemPrompt() {
     promptCache = await readFile(path, 'utf-8');
     return promptCache;
   } catch {
-    // Fallback prompt keeps service available if prompt file is missing.
     promptCache =
       '你是眼科智能助手。请严格依据知识库与工具结果作答，禁止编造；未命中时明确说明未命中；所有医疗建议仅供参考并需由执业医生判断。';
     return promptCache;
   }
 }
 
+// 根据环境变量配置创建语言模型实例，支持启用思考链和联网搜索功能，并允许前端强制控制联网开关以确保隐私安全
 function getModel(enableWebSearch?: boolean) {
   const apiKey = process.env.OPENAI_API_KEY ?? process.env.DASHSCOPE_API_KEY;
   if (!apiKey) {
@@ -143,11 +147,14 @@ function getModel(enableWebSearch?: boolean) {
     process.env.OPENAI_BASE_URL ??
     process.env.DASHSCOPE_BASE_URL ??
     'https://dashscope.aliyuncs.com/compatible-mode/v1';
+  // 环境变量优先级：前端接口参数 > 环境变量，确保前端配置的联网开关能够覆盖环境变量设置，满足用户隐私保护需求
   const enableThinking =
     (process.env.QWEN_ENABLE_THINKING ?? 'false').toLowerCase() === 'true';
+  // 联网开关
   const enableSearchByEnv =
     (process.env.QWEN_ENABLE_SEARCH ?? 'true').toLowerCase() === 'true';
   const enableSearch = enableWebSearch ?? enableSearchByEnv;
+  // 强制联网
   const forcedSearch =
     (process.env.QWEN_FORCED_SEARCH ?? 'false').toLowerCase() === 'true';
 
@@ -173,6 +180,7 @@ function getModel(enableWebSearch?: boolean) {
   });
 }
 
+// 主函数：根据请求参数配置模型和工具，加载提示词，创建Agent实例并执行查询，最后处理模型输出以确保包含正确的引用格式
 export async function runAgent(req: AgentRequest): Promise<string> {
   const model = getModel(req.enableWebSearch);
   const businessTools = req.allowBusinessToolCall
