@@ -25,11 +25,22 @@ export default function Home() {
       <div className="rounded-2xl border border-slate-200 p-5">
         <p className="text-sm font-semibold text-slate-800">Iframe 嵌入示例</p>
         <pre className="mt-2 overflow-x-auto rounded-xl bg-slate-900 p-4 text-xs text-slate-100">
-          {`<iframe
-  src="http://localhost:3000/ai?token=YOUR_TOKEN"
-  style="width:100%;height:100%;border:0;"
-  allow="clipboard-read; clipboard-write"
-/>`}
+          {`<iframe id="oph-ai" src="http://localhost:3000/ai" style="width:100%;height:100%;border:0;" />
+<script>
+  const iframe = document.getElementById('oph-ai');
+  const aiOrigin = 'http://localhost:3000';
+  const token = 'YOUR_TOKEN';
+
+  window.addEventListener('message', (event) => {
+    if (event.origin !== aiOrigin) return;
+    if (event.data?.type !== 'REQUEST_AUTH_TOKEN') return;
+
+    iframe?.contentWindow?.postMessage(
+      { type: 'AUTH_TOKEN', token, source: 'host-app', timestamp: Date.now() },
+      aiOrigin,
+    );
+  });
+</script>`}
         </pre>
       </div>
     </main>

@@ -6,14 +6,15 @@ import ReactMarkdown from 'react-markdown';
 import rehypeSanitize from 'rehype-sanitize';
 import remarkGfm from 'remark-gfm';
 
+type Props = {
+  token?: string;
+  ensureToken?: () => Promise<string>;
+};
+
 type ChatMessage = {
   id: string;
   role: 'user' | 'assistant';
   content: string;
-};
-
-type Props = {
-  token?: string;
 };
 
 type BusinessAction = 'patient_list' | 'diagnosis_history' | 'appointments';
@@ -47,8 +48,7 @@ const QUICK_ACTIONS: Array<{
 
 const TYPEWRITER_DELAY_MS = 16;
 const TYPEWRITER_CHUNK_SIZE = 2;
-
-export default function AiAssistantClient({ token }: Props) {
+export default function AiAssistantClient({ token, ensureToken }: Props) {
   const [threadId] = useState(() => crypto.randomUUID());
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -122,11 +122,17 @@ export default function AiAssistantClient({ token }: Props) {
     setLoading(true);
 
     try {
+      const tokenForRequest = token?.trim() || (await ensureToken?.()) || '';
+
+      if (options.allowBusinessToolCall && !tokenForRequest) {
+        throw new Error('未获取登录凭证，暂无法调用业务查询工具');
+      }
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(token ? { authentication: token } : {}),
+          ...(tokenForRequest ? { authentication: tokenForRequest } : {}),
         },
         body: JSON.stringify({
           question,

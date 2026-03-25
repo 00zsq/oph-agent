@@ -98,11 +98,33 @@ npm run dev
 
 ```html
 <iframe
-  src="http://localhost:3000/ai?token=YOUR_TOKEN"
-  style="width:100%;height:100%;border:0;"
-  allow="clipboard-read; clipboard-write"
+  id="oph-ai"
+  src="http://localhost:3000/ai"
+  style="width:100%;height:100%;border:0"
 ></iframe>
+
+<script>
+  const iframe = document.getElementById('oph-ai');
+  const aiOrigin = 'http://localhost:3000';
+  const token = 'YOUR_TOKEN';
+
+  window.addEventListener('message', (event) => {
+    if (event.origin !== aiOrigin) return;
+    if (event.data?.type !== 'REQUEST_AUTH_TOKEN') return;
+
+    iframe?.contentWindow?.postMessage(
+      { type: 'AUTH_TOKEN', token, source: 'host-app', timestamp: Date.now() },
+      aiOrigin,
+    );
+  });
+</script>
 ```
+
+安全建议：
+
+1. 在 Next 子应用配置 `NEXT_PUBLIC_ALLOWED_PARENT_ORIGINS`（逗号分隔）限制允许的父页面源。
+2. 宿主页面与子应用双方都要校验 `event.origin`，不要使用 `*` 下发敏感 token。
+3. token 建议只保存在内存态，不落盘到 localStorage。
 
 ### 3.4 对话接口调用
 
