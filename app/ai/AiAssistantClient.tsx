@@ -48,11 +48,20 @@ const QUICK_ACTIONS: Array<{
 
 const TYPEWRITER_DELAY_MS = 16;
 const TYPEWRITER_CHUNK_SIZE = 2;
+
+function createClientId() {
+  if (typeof globalThis.crypto?.randomUUID === 'function') {
+    return globalThis.crypto.randomUUID();
+  }
+
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+}
+
 export default function AiAssistantClient({ token, ensureToken }: Props) {
-  const [threadId] = useState(() => crypto.randomUUID());
+  const [threadId] = useState(() => createClientId());
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
-      id: crypto.randomUUID(),
+      id: createClientId(),
       role: 'assistant',
       content: '您好，我是您的AI助手，有什么可以帮您的吗？',
     },
@@ -73,7 +82,7 @@ export default function AiAssistantClient({ token, ensureToken }: Props) {
   }, [messages, loading, typing]);
 
   async function appendAssistantMessageWithTypewriter(fullText: string) {
-    const id = crypto.randomUUID();
+    const id = createClientId();
     const chars = Array.from(fullText);
     setTyping(true);
     setMessages((prev) => [...prev, { id, role: 'assistant', content: '' }]);
@@ -113,7 +122,7 @@ export default function AiAssistantClient({ token, ensureToken }: Props) {
 
   async function sendQuestion(question: string, options: SendOptions) {
     const userMessage: ChatMessage = {
-      id: crypto.randomUUID(),
+      id: createClientId(),
       role: 'user',
       content: question,
     };
@@ -161,7 +170,7 @@ export default function AiAssistantClient({ token, ensureToken }: Props) {
       setMessages((prev) => [
         ...prev,
         {
-          id: crypto.randomUUID(),
+          id: createClientId(),
           role: 'assistant',
           content: `请求失败，请稍后再试。错误类型：${message}`,
         },

@@ -1,0 +1,14 @@
+services:
+  oph-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_ALLOWED_PARENT_ORIGINS: http://120.79.247.123:8081,http://120.79.247.123
+    image: oph-agent:latest
+    container_name: oph-agent
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
